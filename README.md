@@ -14,7 +14,7 @@
 
 本次基于BlobFS设计KV数据库。考虑到BlobFS仅支持追加写的特性，本次实验选择使用C++复现Bitcask数据库。
 
-- BlobFS的限制![image-20221222194509364](./README_set/image-20221222194509364.png)
+- BlobFS的限制![image-20221222194509364](./bitcask/README_set/image-20221222194509364.png)
 
 ### Bitcask数据库原理
 
@@ -26,11 +26,11 @@
 
 在任意时间点，只有一个文件是可写的，在Bitcask模型中称其为active data file，而其他的已经达到限制大小的文件，称为older data file，如下图：
 
-![image-20221222195029020](./README_set/image-20221222195029020.png)
+![image-20221222195029020](./bitcask/README_set/image-20221222195029020.png)
 
 文件中的数据结构非常简单，是一条一条的数据写入操作，每一条数据的结构如下：
 
-![image-20221222194639115](./README_set/image-20221222194639115.png)
+![image-20221222194639115](./bitcask/README_set/image-20221222194639115.png)
 
 #### 基于hash表的索引数据
 
@@ -39,10 +39,10 @@
 例如在Bigtable中，使用bloom-filter算法为每一个数据文件维护一个bloom-filter 的数据块，以此来判定一个值是否在某一个数据文件中。
 在Bitcask模型中，除了存储在磁盘上的数据文件，还有另外一块数据，那就是存储在内存中的hash表，hash表的作用是通过key值快速的定位到value的位置。hash表的结构大致如下图所示：
 
-![image-20221222195243972](./README_set/image-20221222195243972.png)
+![image-20221222195243972](./bitcask/README_set/image-20221222195243972.png)
 
 hash表对应的这个结构中包括了三个用于定位数据value的信息，分别是文件id号(file_id)，value值在文件中的位置（value_pos）,value值的大小（value_sz），于是我们通过读取file_id对应文件的value_pos开始的value_sz个字节，就得到了我们需要的value值。整个过程如下图所示：
 
-![image-20221222195226455](./README_set/image-20221222195226455.png)
+![image-20221222195226455](./bitcask/README_set/image-20221222195226455.png)
 
 由于多了一个hash表的存在，我们的写操作就需要多更新一块内容，即这个hash表的对应关系。于是一个写操作就需要进行一次顺序的磁盘写入和一次内存操作。
